@@ -1,0 +1,58 @@
+issues:
+  exclude-use-default: false
+
+linters:
+  disable:
+    - deadcode
+
+  enable:
+    - misspell
+    - bodyclose
+    - unused
+    - gofmt
+    - goimports
+    - gosimple
+    - dogsled
+    - durationcheck
+    - goconst
+    - godot
+    - gosec
+    - importas
+    - paralleltest
+    - whitespace
+    - staticcheck
+    - revive
+    - errcheck
+
+linters-settings:
+    gosec:
+      excludes:
+        - G104 # already checked by errcheck
+        - G307 # already checked by errcheck
+        - G304
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
