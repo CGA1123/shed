@@ -16,3 +16,34 @@
 
 `shed` is a `Go` and `Ruby` library implementing cross-service timeout
 propagation and load shedding.
+
+## What?
+
+timeout propagation means advertising the client-side timeout for HTTP
+requests. `shed` uses the `X-Client-Timeout-Ms` header to do this.
+
+load shedding means dropping requests early when under load in order to free up
+resources. This can be done throughout the lifetime of the request, or before
+processing the request (e.g. if the request has been queued for longer than its
+client timeout).
+
+## Why?
+
+Uncontrolled performance degradation of a service can quickly lead to resource
+exhaustion and cascading failures. Client progations and load-shedding along
+with other techniques (such as setting appropriate timeouts, retries, circuit
+breakers, etc.) can improve the manner in which your service fail under load.
+
+Propagating client timeouts and shedding requests based on this allows your
+services to make more informed decisions about which requests are still worth
+processing, saving your limited and already over-utilised resources for
+requests that are still meaningful to process. This avoid wasted resources,
+improves availability under load, and speeds up recovery times by controlling
+request queueing.
+
+In experiment run in [CGA1123/loadshedding-experiment-ruby] load-shedding
+across a single service hop with client timeout propagation improved
+availability of services by a factor of 10 under load.
+
+
+[CGA1123/loadshedding-experiment-ruby]: https://github.com/CGA1123/loadshedding-experiment-ruby
