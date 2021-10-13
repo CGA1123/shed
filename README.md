@@ -17,6 +17,9 @@
 `shed` is a `Go` and `Ruby` library implementing cross-service timeout
 propagation and load shedding.
 
+
+**note**: still under development.
+
 ## What?
 
 timeout propagation means advertising the client-side timeout for HTTP
