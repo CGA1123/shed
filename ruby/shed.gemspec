@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.version = Shed::VERSION
   spec.authors = ["Christian Gregg"]
   spec.email = ["christian@bissy.io"]
-  spec.summary = "A ruby wrapper for Slack's Block Kit"
+  spec.summary = "A ruby timeout propagator and load-shedder"
   spec.homepage = "https://github.com/CGA1123/shed"
   spec.license = "MIT"
 
