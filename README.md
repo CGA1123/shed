@@ -13,3 +13,6 @@
     <img src="https://github.com/CGA1123/shed/actions/workflows/ruby.yml/badge.svg" alt="Ruby CI Status">
   </a>
 </p>
+
+`shed` is a `Go` and `Ruby` library implementing cross-service timeout
+propagation and load shedding.

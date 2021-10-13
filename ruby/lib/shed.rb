@@ -3,6 +3,7 @@
 module Shed
   autoload :FaradayMiddleware, "shed/faraday_middleware"
   autoload :RackMiddleware, "shed/rack_middleware"
+  autoload :HerokuDelta, "shed/heroku_delta"
 
   Timeout = Class.new(StandardError)
 
