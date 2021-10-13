@@ -66,7 +66,7 @@ func (h *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type MiddlewareOpt func(*middleware)
 
 // WithDelta allows for adjusting the timeout set by the Middleware, in order
-// to account for time spent in the network on on various server queues.
+// to account for time spent in the network or on various server queues.
 //
 // The value returned by this function will by subtracted from the
 // `X-Client-Timeout-Ms` value.
