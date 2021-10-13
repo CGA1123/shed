@@ -1,0 +1,3 @@
+#!/bin/bash
+
+bundle exec yard server --reload --port 1123

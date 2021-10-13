@@ -3,11 +3,20 @@
 require "faraday"
 
 module Shed
+  # {FaradayMiddleware} implements a faraday middleware which propagates the
+  # timeout left the current request to the destination host via the
+  # `X-Client-Timeout-Ms` request header.
   class FaradayMiddleware < Faraday::Middleware
+    # @param app The next middleware or adapter in the faraday client chain.
     def initialize(app)
       super(app)
     end
 
+    # {call} sets the `X-Client-Timeout-Ms` to the lesser of the already
+    # configured faraday timeout or the currently configured {Shed} timeout.
+    #
+    # @param env [Faraday::Env] the current request environment.
+    # @return [Faraday::Response] The response to the request.
     def call(env)
       time_left_ms = timeout_ms(env)
 
@@ -18,6 +27,8 @@ module Shed
 
       @app.call(env)
     end
+
+    private
 
     def timeout_ms(env)
       [
