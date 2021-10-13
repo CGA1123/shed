@@ -1,3 +1,5 @@
+// Package shed implements client and server middleware to propagate and
+// respect client timeouts between services.
 package shed
 
 import (
@@ -32,6 +34,22 @@ func (rt *roundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 
 	return rt.next.RoundTrip(r)
+}
+
+// Client builds a new *http.Client from the given *http.Client, wrapping the
+// given client's Transport using RoundTripper.
+func Client(c *http.Client) *http.Client {
+	transport := c.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+
+	return &http.Client{
+		Transport:     RoundTripper(transport),
+		CheckRedirect: c.CheckRedirect,
+		Jar:           c.Jar,
+		Timeout:       c.Timeout,
+	}
 }
 
 // RoundTripper builds a new http.RoundTripper which propagates context
