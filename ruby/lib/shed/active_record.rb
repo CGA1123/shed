@@ -36,7 +36,35 @@ module Shed
         Shed.ensure_time_left!
 
         begin
-          super("SET SESSION statement_timeout=#{time_left}")
+          super("SET SESSION statement_timeout TO #{time_left}")
+          super
+        ensure
+          # TODO: should this be done by middleware instead as a callback?
+          # Would reduce the # of db calls done if we _know_ that every call in
+          # the given context (request) will call `SET SESSION statement_timeout`...
+          if shed_default_statement_timeout
+            super("SET SESSION statement_timeout TO #{shed_default_statement_timeout}")
+          else
+            super("SET SESSION statement_timeout TO DEFAULT")
+          end
+        end
+      end
+
+      # {exec_query} wraps any calls to `exec_query` with a pair of statements
+      # to set and reset the `statement_timeout` session variable on the
+      # current connection.
+      #
+      # @note This will not work as expected when using connection multiplexing
+      #   via tools such as `PgBouncer` in `statement` or `transaction` mode.
+      #   This is because we make use of `SESSION` level variables.
+      def exec_query(sql, name = nil, binds = [], prepare: false)
+        return super unless Shed.timeout_set?
+
+        time_left = Shed.time_left_ms
+        Shed.ensure_time_left!
+
+        begin
+          super("SET SESSION statement_timeout TO #{time_left}")
           super
         ensure
           # TODO: should this be done by middleware instead as a callback?
@@ -55,7 +83,8 @@ module Shed
       def shed_default_statement_timeout
         return @shed_default_statement_timeout if defined?(@shed_default_statement_timeout)
 
-        @shed_default_statement_timeout = @config.fetch(:variables, {}).stringify_keys.fetch("statement_timeout", nil)
+        variables = @config.fetch(:variables, {})
+        @shed_default_statement_timeout = variables["statement_timeout"] || variables[:statement_timeout]
       end
     end
 
@@ -72,11 +101,11 @@ module Shed
         optimiser_hint = "/*+ MAX_EXECUTION_TIME(#{Shed.time_left_ms}) */"
         Shed.ensure_time_left!
 
-        if sql.starts_with?("select")
+        if sql.start_with?("select")
           sql = sql.sub("select", "select #{optimiser_hint}")
         end
 
-        if sql.starts_with?("SELECT")
+        if sql.start_with?("SELECT")
           sql = sql.sub("SELECT", "SELECT #{optimiser_hint}")
         end
 
