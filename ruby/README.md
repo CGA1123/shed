@@ -15,3 +15,8 @@ within the clients declared timeout.
 
 `shed` implements this via a pair of `Rack` and `Faraday` middlewares
 (`Shed::RackMiddleware` and `Shed::FaradayMiddleware`).
+
+For `rails` apps making use of `ActiveRecord` to manage database connections,
+`Shed::ActiveRecord` implements support for `PostgreSQL` and `MySQL2`
+connection adapters to respect deadlines/timeouts set by `Shed` (see
+documentation for these modules for limitations).
