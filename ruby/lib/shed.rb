@@ -8,6 +8,7 @@ module Shed
   autoload :FaradayMiddleware, "shed/faraday_middleware"
   autoload :RackMiddleware, "shed/rack_middleware"
   autoload :HerokuDelta, "shed/heroku_delta"
+  autoload :ActiveRecord, "shed/active_record"
 
   # {Timeout} will be raised when calling {Shed.ensure_time_left!} with no time
   # left in the current request.
