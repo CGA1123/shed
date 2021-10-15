@@ -17,6 +17,7 @@ within the clients declared timeout.
 (`Shed::RackMiddleware` and `Shed::FaradayMiddleware`).
 
 For `rails` apps making use of `ActiveRecord` to manage database connections,
-`Shed::ActiveRecord` implements support for `PostgreSQL` and `MySQL2`
-connection adapters to respect deadlines/timeouts set by `Shed` (see
-documentation for these modules for limitations).
+`Shed::ActiveRecord::Adapter` implements support for checking
+`Shed.ensure_time_left!` before making any query to the database. This does
+_not_ currently implement support for propagating `Shed.time_left_ms` to the
+database query itself, yet.

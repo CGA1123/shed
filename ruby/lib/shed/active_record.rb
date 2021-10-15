@@ -9,107 +9,58 @@ module Shed
     # corresponding `ActiveRecord::ConnectionAdapters` class.
     def self.setup!
       if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
-        ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(PostgreSQL)
+        ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(Adapter)
       end
 
       if defined?(::ActiveRecord::ConnectionAdapters::Mysql2Adapter)
-        ::ActiveRecord::ConnectionAdapters::Mysql2Adapter.prepend(MySQL2)
+        ::ActiveRecord::ConnectionAdapters::Mysql2Adapter.prepend(Adapter)
+      end
+
+      if defined?(::ActiveRecord::ConnectionAdapters::SQLite3Adapter)
+        ::ActiveRecord::ConnectionAdapters::SQLite3Adapter.prepend(Adapter)
       end
     end
 
-    # {PostgreSQL} implements support for {Shed} timeouts/deadlines for the
-    # `PostgreSQLAdapter`.
+    # {Adapter} implements support for {Shed} timeouts/deadlines checking for
+    # any `ActiveRecord::ConnectionAdapters`.
     #
-    # @todo Do other execution methods need to be prepended? (exec_query and so on?)
-    module PostgreSQL
-      # {execute} wraps any calls to `execute` with a pair of statements to set
-      # and reset the `statement_timeout` session variable on the current
-      # connection.
-      #
-      # @note This will not work as expected when using connection multiplexing
-      #   via tools such as `PgBouncer` in `statement` or `transaction` mode.
-      #   This is because we make use of `SESSION` level variables.
+    # It is intended to be prepended to the connection adapter in use by the
+    # application, it will check if the current deadline is exceeded via
+    # {Shed.ensure_time_left!} before calling the underlying querying function.
+    #
+    # This does not prevent a specific query from over-running the
+    # {Shed.time_left_ms} as it does _not_ set any specific timeout on the
+    # connection or for the query. The default timeout values are respected and
+    # should be set.
+    module Adapter
       def execute(sql, name = nil)
-        return super unless Shed.timeout_set?
-
-        time_left = Shed.time_left_ms
         Shed.ensure_time_left!
 
-        begin
-          super("SET SESSION statement_timeout TO #{time_left}")
-          super
-        ensure
-          # TODO: should this be done by middleware instead as a callback?
-          # Would reduce the # of db calls done if we _know_ that every call in
-          # the given context (request) will call `SET SESSION statement_timeout`...
-          if shed_default_statement_timeout
-            super("SET SESSION statement_timeout TO #{shed_default_statement_timeout}")
-          else
-            super("SET SESSION statement_timeout TO DEFAULT")
-          end
-        end
+        super
       end
 
-      # {exec_query} wraps any calls to `exec_query` with a pair of statements
-      # to set and reset the `statement_timeout` session variable on the
-      # current connection.
-      #
-      # @note This will not work as expected when using connection multiplexing
-      #   via tools such as `PgBouncer` in `statement` or `transaction` mode.
-      #   This is because we make use of `SESSION` level variables.
       def exec_query(sql, name = nil, binds = [], prepare: false)
-        return super unless Shed.timeout_set?
-
-        time_left = Shed.time_left_ms
         Shed.ensure_time_left!
 
-        begin
-          super("SET SESSION statement_timeout TO #{time_left}")
-          super
-        ensure
-          # TODO: should this be done by middleware instead as a callback?
-          # Would reduce the # of db calls done if we _know_ that every call in
-          # the given context (request) will call `SET SESSION statement_timeout`...
-          if shed_default_statement_timeout
-            super("SET SESSION statement_timeout TO #{shed_default_statement_timeout}")
-          else
-            super("SET SESSION statement_timeout TO DEFAULT")
-          end
-        end
+        super
       end
 
-      private
-
-      def shed_default_statement_timeout
-        return @shed_default_statement_timeout if defined?(@shed_default_statement_timeout)
-
-        variables = @config.fetch(:variables, {})
-        @shed_default_statement_timeout = variables["statement_timeout"] || variables[:statement_timeout]
-      end
-    end
-
-    # {MySQL2} implements support for {Shed} timeouts/deadlines for the
-    # `MySQL2` adapter.
-    #
-    # @todo Do other execution methods need to be prepended? (exec_query and so on?)
-    module MySQL2
-      # {execute} will add the `MAX_EXECUTION_TIME` optimizer_hint magic
-      # comment to any SQL query begining with `select` or `SELECT`
-      def execute(sql, name = nil)
-        return super unless Shed.timeout_set?
-
-        optimiser_hint = "/*+ MAX_EXECUTION_TIME(#{Shed.time_left_ms}) */"
+      def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil)
         Shed.ensure_time_left!
 
-        if sql.start_with?("select")
-          sql = sql.sub("select", "select #{optimiser_hint}")
-        end
+        super
+      end
 
-        if sql.start_with?("SELECT")
-          sql = sql.sub("SELECT", "SELECT #{optimiser_hint}")
-        end
+      def exec_delete(sql, name = nil, binds = [])
+        Shed.ensure_time_left!
 
-        super(sql, name)
+        super
+      end
+
+      def exec_update(sql, name = nil, binds = [])
+        Shed.ensure_time_left!
+
+        super
       end
     end
   end
