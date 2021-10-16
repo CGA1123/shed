@@ -38,10 +38,19 @@ module Shed
 
     # {with_timeout} sets the timeout deadline for the current context.
     #
+    # By default will only allow setting a new timeout with a deadline that is
+    # _earlier_ than the currently configured deadline. This behaviour can be
+    # overriden by setting `force: true` to extend the deadline.
+    #
     # @param ms [Integer] the timeout in milliseconds.
+    # @param force: [Boolean] whether to force the current timeout.
     # @return [void]
-    def with_timeout(ms)
-      store[KEY] = (now_ms + ms.to_i)
+    def with_timeout(ms, force: false)
+      deadline = (now_ms + ms.to_i)
+
+      return unless earlier?(deadline) || force
+
+      store[KEY] = deadline
     end
 
     # {clear_timeout} will clear any timeout set in the current context.
@@ -91,6 +100,12 @@ module Shed
     end
 
     private
+
+    def earlier?(deadline)
+      return true unless timeout_set?
+
+      deadline < store[KEY]
+    end
 
     def store
       Thread.current
