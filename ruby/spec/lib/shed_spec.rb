@@ -3,6 +3,8 @@
 require "spec_helper"
 
 RSpec.describe Shed do
+  after { described_class.clear_timeout }
+
   describe "::HTTP_HEADER" do
     it { expect(described_class::HTTP_HEADER).to eq("X-Client-Timeout-Ms") }
   end
@@ -21,10 +23,8 @@ RSpec.describe Shed do
   context "with a timeout in the future set" do
     before do
       allow(Process).to receive(:clock_gettime).and_return(0.001)
-      Shed.with_timeout(10_000)
+      described_class.with_timeout(10_000)
     end
-
-    after { Shed.clear_timeout }
 
     it { expect(described_class.timeout_set?).to be true }
     it { expect(described_class.time_left_ms).to be 10_000 }
@@ -34,16 +34,28 @@ RSpec.describe Shed do
 
   context "with a timeout in the past set" do
     before do
-      allow(Process).to receive(:clock_gettime).and_return(0.001)
-      Shed.with_timeout(10_000)
-      allow(Process).to receive(:clock_gettime).and_return(10.001)
+      allow(Process).to receive(:clock_gettime).and_return(0.001, 10.001)
+      described_class.with_timeout(10_000)
     end
-
-    after { Shed.clear_timeout }
 
     it { expect(described_class.timeout_set?).to be true }
     it { expect(described_class.time_left_ms).to be 0 }
     it { expect(described_class.time_left?).to be false }
-    it { expect { described_class.ensure_time_left! }.to raise_error(Shed::Timeout) }
+    it { expect { described_class.ensure_time_left! }.to raise_error(described_class::Timeout) }
+  end
+
+  describe "#with_timeout" do
+    before { allow(Process).to receive(:clock_gettime).and_return(1.0) }
+
+    it "does not set a higher than current timeout unless forced" do
+      described_class.with_timeout(10_000)
+      expect(described_class.time_left_ms).to eq(10_000)
+
+      described_class.with_timeout(20_000)
+      expect(described_class.time_left_ms).to eq(10_000)
+
+      described_class.with_timeout(20_000, force: true)
+      expect(described_class.time_left_ms).to eq(20_000)
+    end
   end
 end

@@ -58,14 +58,14 @@ func RoundTripper(n http.RoundTripper) http.RoundTripper {
 	return &roundTripper{next: n}
 }
 
-type middleware struct {
+type propagateMiddleware struct {
 	next  http.Handler
 	delta func(r *http.Request) time.Duration
 }
 
 // ServeHTTP will set the `X-Client-Timeout-Ms` value (adjusted via any
 // provided Delta function) as the current requests context deadline.
-func (h *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *propagateMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	value, err := strconv.ParseInt(r.Header.Get(Header), 10, 64)
 	if err == nil && value > 0 {
 		timeout := (time.Duration(value) * time.Millisecond) - h.delta(r)
@@ -79,26 +79,26 @@ func (h *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.next.ServeHTTP(w, r)
 }
 
-// MiddlewareOpt is a function which can modify the behaviour of the shed
+// PropagateMiddlewareOpt is a function which can modify the behaviour of the shed
 // middleware.
-type MiddlewareOpt func(*middleware)
+type PropagateMiddlewareOpt func(*propagateMiddleware)
 
 // WithDelta allows for adjusting the timeout set by the Middleware, in order
 // to account for time spent in the network or on various server queues.
 //
 // The value returned by this function will by subtracted from the
 // `X-Client-Timeout-Ms` value.
-func WithDelta(f func(*http.Request) time.Duration) MiddlewareOpt {
-	return func(m *middleware) {
+func WithDelta(f func(*http.Request) time.Duration) PropagateMiddlewareOpt {
+	return func(m *propagateMiddleware) {
 		m.delta = f
 	}
 }
 
-// Middleware builds a new http.Handler middleware which sets a context timeout
+// PropagateMiddleware builds a new http.Handler middleware which sets a context timeout
 // on incoming requests if the client has propagated its timeout via the
 // `X-Client-Timeout-Ms` header.
-func Middleware(n http.Handler, opts ...MiddlewareOpt) http.Handler {
-	m := &middleware{
+func PropagateMiddleware(n http.Handler, opts ...PropagateMiddlewareOpt) http.Handler {
+	m := &propagateMiddleware{
 		next: n,
 		delta: func(_ *http.Request) time.Duration {
 			return time.Duration(0)
@@ -110,4 +110,30 @@ func Middleware(n http.Handler, opts ...MiddlewareOpt) http.Handler {
 	}
 
 	return m
+}
+
+type defaultTimeoutMiddleware struct {
+	n http.Handler
+	f func(*http.Request) time.Duration
+}
+
+func (m *defaultTimeoutMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if timeout := m.f(r); timeout > time.Duration(0) {
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
+
+		r = r.WithContext(ctx)
+	}
+
+	m.n.ServeHTTP(w, r)
+}
+
+// DefaultTimeoutMiddleware wraps the given handler with a default context
+// deadline propagated via the request context.
+//
+// The timeout function can be used to have dynamic request based upper bounds
+// for requests. If this function returns a time.Duration that is not strictly
+// greater than 0, no timeout will be set.
+func DefaultTimeoutMiddleware(n http.Handler, timeout func(*http.Request) time.Duration) http.Handler {
+	return &defaultTimeoutMiddleware{n: n, f: timeout}
 }
