@@ -1,11 +1,10 @@
 name: Release Ruby
-
 on:
   workflow_dispatch:
-    inputs:
-      otp:
-        name: 'RubyGems OTP Code'
-        required: true
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   release:
@@ -29,5 +28,4 @@ jobs:
       - run: bundle exec rake release
         working-directory: ruby
         env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-          GEM_HOST_OTP_CODE: ${{ github.event.inputs.otp }}
+          GEM_HOST_API_KEY: "Bearer ${{ github.token }}"
