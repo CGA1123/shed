@@ -1,0 +1,33 @@
+name: Release Ruby
+
+on:
+  workflow_dispatch:
+    inputs:
+      otp:
+        name: 'RubyGems OTP Code'
+        required: true
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - run: gem update --system
+        working-directory: ruby
+      - run: git config --global user.email github-action@users.noreply.github.com
+        working-directory: ruby
+      - run: git config --global user.name GitHub Actions
+        working-directory: ruby
+      - run: git config --global user.password ${{ github.token }}
+        working-directory: ruby
+      - run: bundle install
+        working-directory: ruby
+      - run: bundle exec rake release
+        working-directory: ruby
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          GEM_HOST_OTP_CODE: ${{ github.event.inputs.otp }}
