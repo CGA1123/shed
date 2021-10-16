@@ -84,24 +84,22 @@ func Test_Client(t *testing.T) {
 	})
 }
 
-func Test_Middleware(t *testing.T) {
+func Test_PropagateMiddleware(t *testing.T) {
 	t.Parallel()
 
 	t.Run("when request has a declared timeout", func(t *testing.T) {
 		t.Parallel()
 
-		m := shed.Middleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		m := shed.PropagateMiddleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 			deadline, ok := r.Context().Deadline()
 
 			assert.True(t, ok)
 			assert.WithinDuration(t, time.Now().Add(10*time.Second), deadline, time.Millisecond)
 		}))
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		r, err := http.NewRequestWithContext(ctx, "GET", "/foo", nil)
+		r, err := http.NewRequestWithContext(context.Background(), "GET", "/foo", nil)
 		require.NoError(t, err)
+		r.Header.Add(shed.Header, "10000")
 
 		m.ServeHTTP(httptest.NewRecorder(), r)
 	})
@@ -109,7 +107,7 @@ func Test_Middleware(t *testing.T) {
 	t.Run("when request does not have a deadline", func(t *testing.T) {
 		t.Parallel()
 
-		m := shed.Middleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		m := shed.PropagateMiddleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 			_, ok := r.Context().Deadline()
 
 			assert.False(t, ok)
@@ -120,4 +118,40 @@ func Test_Middleware(t *testing.T) {
 
 		m.ServeHTTP(httptest.NewRecorder(), r)
 	})
+}
+
+func Test_DefaultTimeoutMiddleware(t *testing.T) {
+	t.Parallel()
+
+	tcs := []struct {
+		d               time.Duration
+		timeoutExpected bool
+	}{
+		{d: time.Duration(0), timeoutExpected: false},
+		{d: time.Duration(-1), timeoutExpected: false},
+		{d: time.Duration(1000), timeoutExpected: true},
+	}
+	for _, tc := range tcs {
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			deadline, ok := r.Context().Deadline()
+
+			if tc.timeoutExpected {
+				assert.True(t, ok)
+				assert.WithinDuration(t, time.Now().Add(tc.d), deadline, time.Millisecond)
+			} else {
+				assert.False(t, ok)
+			}
+		})
+
+		timeout := func(_ *http.Request) time.Duration {
+			return tc.d
+		}
+
+		m := shed.DefaultTimeoutMiddleware(handler, timeout)
+
+		r, err := http.NewRequestWithContext(context.Background(), "GET", "/foo", nil)
+		require.NoError(t, err)
+
+		m.ServeHTTP(httptest.NewRecorder(), r)
+	}
 }

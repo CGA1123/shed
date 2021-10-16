@@ -3,7 +3,7 @@
 require "spec_helper"
 require "rack"
 
-RSpec.describe Shed::RackMiddleware do
+RSpec.describe Shed::RackMiddleware::Propagate do
   after { Shed.clear_timeout }
 
   context "when setting X-Client-Timeout-Ms" do
