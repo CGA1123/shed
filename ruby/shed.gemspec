@@ -12,6 +12,10 @@ Gem::Specification.new do |spec|
   spec.summary = "A ruby timeout propagator and load-shedder"
   spec.homepage = "https://github.com/CGA1123/shed"
   spec.license = "MIT"
+  spec.metadata = {
+    "github_repo" => "https://github.com/CGA1123/shed",
+    "allowed_push_host" => "https://rubygems.pkg.github.com/CGA1123"
+  }
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`
