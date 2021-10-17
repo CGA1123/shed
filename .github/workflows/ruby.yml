@@ -8,6 +8,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: shed_test
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout
+          5s --health-retries 5
+        ports:
+        - 3306:3306
     strategy:
       fail-fast: false
       matrix:

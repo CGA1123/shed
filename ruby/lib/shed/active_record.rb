@@ -14,6 +14,7 @@ module Shed
 
       if defined?(::ActiveRecord::ConnectionAdapters::Mysql2Adapter)
         ::ActiveRecord::ConnectionAdapters::Mysql2Adapter.prepend(Adapter)
+        ::ActiveRecord::Relation.prepend(MySQL2OptimizerHints)
       end
 
       if defined?(::ActiveRecord::ConnectionAdapters::SQLite3Adapter)
@@ -61,6 +62,22 @@ module Shed
         Shed.ensure_time_left!
 
         super
+      end
+    end
+
+    # {MySQL2OptimizerHints} is intended to be prepended to
+    # `ActiveRecord::Relation`, it will cause all queries to have the
+    # `MAX_EXECUTION_TIME` optimizer hint added, propagating the current
+    # deadline (if set) to the database.
+    module MySQL2OptimizerHints
+      def optimizer_hints_values
+        current = super
+
+        if Shed.timeout_set? && !current.find { |v| v =~ /MAX_EXECUTION_TIME/ }
+          current += ["MAX_EXECUTION_TIME(#{Shed.time_left_ms})"]
+        end
+
+        current
       end
     end
   end
