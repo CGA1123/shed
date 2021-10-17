@@ -14,15 +14,13 @@
   </a>
 </p>
 
-`shed` is a `Go` and `Ruby` library implementing cross-service timeout
+`shed` is a `Go` and `Ruby` library implementing cross-service timeout/deadline
 propagation and load shedding.
 
 
-**note**: still under development.
-
 ## What?
 
-timeout propagation means advertising the client-side timeout for HTTP
+timeout/deadline propagation means advertising the client-side timeout for HTTP
 requests. `shed` uses the `X-Client-Timeout-Ms` header to do this.
 
 load shedding means dropping requests early when under load in order to free up
