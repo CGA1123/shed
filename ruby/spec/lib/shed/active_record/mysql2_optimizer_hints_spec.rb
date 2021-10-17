@@ -27,7 +27,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
     [
       ["with no other hints", [], ["MAX_EXECUTION_TIME(1000)"]],
       ["with other hints", ["SOMETHING_ELSE"], ["SOMETHING_ELSE", "MAX_EXECUTION_TIME(1000)"]],
-      ["with another MAX_EXECUTION_TIME hint", ["MAX_EXECUTION_TIME(500)"], ["MAX_EXECUTION_TIME(500)"]],
+      ["with another MAX_EXECUTION_TIME hint", ["MAX_EXECUTION_TIME(500)"], ["MAX_EXECUTION_TIME(500)"]]
     ].each do |name, current, expected|
       context name do
         it "returns the expected optimizer_hints_values" do
@@ -43,7 +43,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
     [
       ["with no other hints", [], []],
       ["with other hints", ["SOMETHING_ELSE"], ["SOMETHING_ELSE"]],
-      ["with another MAX_EXECUTION_TIME hint", ["MAX_EXECUTION_TIME(500)"], ["MAX_EXECUTION_TIME(500)"]],
+      ["with another MAX_EXECUTION_TIME hint", ["MAX_EXECUTION_TIME(500)"], ["MAX_EXECUTION_TIME(500)"]]
     ].each do |name, current, expected|
       context name do
         it "returns the expected optimizer_hints_values" do
@@ -84,7 +84,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
     context "without timeout" do
       it "doesn't set MAX_EXECUTION_TIME optimizer hint" do
         queries = []
-        callback = lambda {|*args| queries << args.last[:sql] }
+        callback = lambda { |*args| queries << args.last[:sql] }
 
         ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
           model.all.load
@@ -95,7 +95,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
 
       it "preserves other hints" do
         queries = []
-        callback = lambda {|*args| queries << args.last[:sql] }
+        callback = lambda { |*args| queries << args.last[:sql] }
 
         ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
           model.optimizer_hints("NO_INDEX_MERGE(posts)").all.load
@@ -113,7 +113,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
 
       it "sets MAX_EXECUTION_TIME optimizer hint" do
         queries = []
-        callback = lambda {|*args| queries << args.last[:sql] }
+        callback = lambda { |*args| queries << args.last[:sql] }
 
         ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
           model.all.load
@@ -124,7 +124,7 @@ RSpec.describe Shed::ActiveRecord::MySQL2OptimizerHints do
 
       it "preserves other hints" do
         queries = []
-        callback = lambda {|*args| queries << args.last[:sql] }
+        callback = lambda { |*args| queries << args.last[:sql] }
 
         ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
           model.optimizer_hints("NO_INDEX_MERGE(posts)").all.load
