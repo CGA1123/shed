@@ -68,9 +68,10 @@ module Shed
     # {MySQL2OptimizerHints} is intended to be prepended to
     # `ActiveRecord::Relation`, it will cause all queries to have the
     # `MAX_EXECUTION_TIME` optimizer hint added, propagating the current
+    # deadline (if set) to the database.
     #
     # @note MySQL only supports MAX_EXECUTION_TIME for SELECT queries, it will
-    #   silently ignore this timeout for other queries.   # deadline (if set) to the database.
+    #   silently ignore this timeout for other queries.
     module MySQL2OptimizerHints
       def optimizer_hints_values
         current = super
