@@ -9,7 +9,9 @@ module Shed
     # corresponding `ActiveRecord::ConnectionAdapters` class.
     def self.setup!
       if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
-        ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(Adapter)
+        ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(
+          PostgreSQLStatementTimeout
+        )
       end
 
       if defined?(::ActiveRecord::ConnectionAdapters::Mysql2Adapter)
@@ -40,7 +42,7 @@ module Shed
         super
       end
 
-      def exec_query(sql, name = nil, binds = [], prepare: false)
+      def exec_query(sql, name = nil, binds = [], prepare: false, async: false)
         Shed.ensure_time_left!
 
         super
@@ -62,6 +64,48 @@ module Shed
         Shed.ensure_time_left!
 
         super
+      end
+    end
+
+    # {PostgreSQLStatementTimeout} is intended to be prepended to
+    # `ActiveRecord::ConnectionAdapters::PostgreSQLAdapter`. It wraps all
+    # all individual database queries with calls to set and reset the
+    # `statement_timeout` variable to {Shed.time_left_ms} before execution.
+    module PostgreSQLStatementTimeout
+      def execute(sql, name = nil)
+        with_timeout { super }
+      end
+
+      def execute_and_clear(sql, name, binds, prepare: false, async: false)
+        with_timeout { super }
+      end
+
+      private
+
+      def with_timeout(&block)
+        time_left_ms = Shed.time_left_ms
+        Shed.ensure_time_left!
+
+        begin
+          # TODO: is using @connection.execute ok (?)
+          @connection.execute("SET SESSION statement_timeout TO #{time_left_ms}")
+
+          block.call
+        ensure
+          if default_statement_timeout
+            @connection.execute("SET SESSION statement_timeout TO #{default_statement_timeout}")
+          else
+            @connection.execute("SET SESSION statement_timeout TO DEFAULT")
+          end
+        end
+      end
+
+      def default_statement_timeout
+        return @default_statement_timeout if defined?(@default_statement_timeout)
+
+        variables = @config.fetch(:variables, {})
+
+        @default_statement_timeout = variables[:statement_timeout] || variables["statement_timeout"]
       end
     end
 

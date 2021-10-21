@@ -28,7 +28,7 @@ RSpec.describe Shed::ActiveRecord::Adapter do
       it "calls the underlying adapter" do
         adapter.exec_query("SELECT 1")
 
-        expect(adapter.calls).to eq([[:exec_query, ["SELECT 1", nil, [], {prepare: false}]]])
+        expect(adapter.calls).to eq([[:exec_query, ["SELECT 1", nil, [], {prepare: false, async: false}]]])
       end
     end
 
@@ -50,7 +50,7 @@ RSpec.describe Shed::ActiveRecord::Adapter do
         it "calls the underlying adapter" do
           adapter.exec_query("SELECT 1")
 
-          expect(adapter.calls).to eq([[:exec_query, ["SELECT 1", nil, [], {prepare: false}]]])
+          expect(adapter.calls).to eq([[:exec_query, ["SELECT 1", nil, [], {prepare: false, async: false}]]])
         end
       end
     end
