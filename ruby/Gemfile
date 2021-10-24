@@ -13,5 +13,6 @@ gem "rspec_junit_formatter", "~> 0.4"
 gem "yard", "~> 0.9"
 gem "activerecord", "~> 6.1"
 gem "mysql2", "~> 0.5"
+gem "pg", "~> 1"
 
 gem "standard", require: false
