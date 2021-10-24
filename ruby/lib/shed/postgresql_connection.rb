@@ -2,14 +2,14 @@
 
 module Shed
   module PostgreSQLConnection
-    # {WithCancellationPropagation} adds support for deadline propagation to a
+    # {WithDeadlinePropagation} adds support for deadline propagation to a
     # `PG::Connection` by patching synchronous query methods to make use of
     # `libpq`'s asynchronous non-blocking APIs to timeout and cancel any
     # ongoing query after {Shed.time_left_ms} has been exceeded.
     #
     # Query methods canceled due to exceeding their deadline will wrap any
     # `PG::QueryCanceled` as {Shed::Timeout}.
-    module WithCancellationPropagation
+    module WithDeadlinePropagation
       def exec(*args, &block)
         return super unless Shed.timeout_set?
 
@@ -58,9 +58,9 @@ module Shed
     end
 
     # {Shed::Wrapper} provides a `SimpleDelegator` for a `PG::Connection` which
-    # includes behaviour provided by {WithCancellationPropagation}.
+    # includes behaviour provided by {WithDeadlinePropagation}.
     class Wrapper < SimpleDelegator
-      prepend WithCancellationPropagation
+      prepend WithDeadlinePropagation
     end
   end
 end
