@@ -9,7 +9,7 @@ module Shed
     # corresponding `ActiveRecord::ConnectionAdapters` class.
     def self.setup!
       if defined?(::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
-        ::ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(Adapter)
+        PG::Connection.prepend(Shed::PostgreSQLConnection)
       end
 
       if defined?(::ActiveRecord::ConnectionAdapters::Mysql2Adapter)
@@ -40,7 +40,7 @@ module Shed
         super
       end
 
-      def exec_query(sql, name = nil, binds = [], prepare: false)
+      def exec_query(sql, name = nil, binds = [], prepare: false, async: false)
         Shed.ensure_time_left!
 
         super

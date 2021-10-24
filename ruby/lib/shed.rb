@@ -9,6 +9,7 @@ module Shed
   autoload :RackMiddleware, "shed/rack_middleware"
   autoload :HerokuDelta, "shed/heroku_delta"
   autoload :ActiveRecord, "shed/active_record"
+  autoload :PostgreSQLConnection, "shed/postgresql_connection"
 
   # {Timeout} will be raised when calling {Shed.ensure_time_left!} with no time
   # left in the current request.
