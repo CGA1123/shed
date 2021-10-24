@@ -6,7 +6,7 @@ require "pg"
 RSpec.describe Shed::PostgreSQLConnection do
   after { Shed.clear_timeout }
 
-  let(:opts) { {password: "postgres", dbname: "shed_test"} }
+  let(:opts) { {password: "postgres", dbname: "shed_test", host: "localhost"} }
   let(:conn) { described_class::Wrapper.new(PG::Connection.new(opts)) }
 
   context "without any timeout" do
