@@ -21,6 +21,7 @@ jobs:
       postgres:
         image: postgres
         env:
+          POSTGRES_USER: runner
           POSTGRES_DB: shed_test
           POSTGRES_PASSWORD: postgres
         options: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s
