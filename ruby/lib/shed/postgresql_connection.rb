@@ -57,7 +57,7 @@ module Shed
       end
     end
 
-    # {Shed::Wrapper} provides a `SimpleDelegator` for a `PG::Connection` which
+    # {Wrapper} provides a `SimpleDelegator` for a `PG::Connection` which
     # includes behaviour provided by {WithDeadlinePropagation}.
     class Wrapper < SimpleDelegator
       prepend WithDeadlinePropagation
