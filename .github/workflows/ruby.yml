@@ -34,7 +34,7 @@ jobs:
         ruby: [ '2.6', '2.7', '3.0' ]
     name: ${{ matrix.ruby }}
     steps:
-      - uses: actions/checkout@v2.3.5
+      - uses: actions/checkout@v2.4.0
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
