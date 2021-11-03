@@ -18,44 +18,77 @@ const (
 )
 
 type roundTripper struct {
-	next http.RoundTripper
+	next       http.RoundTripper
+	maxTimeout int64
 }
 
 // RoundTrip wraps the given round tripper, setting the `X-Client-Timeout-Ms`
 // on any request made to the number of milliseconds left until the request's
 // context deadline will be exceeded.
 func (rt *roundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	deadline, ok := r.Context().Deadline()
-	if ok {
-		millisecondsLeft := int64(time.Until(deadline) / time.Millisecond)
-		if millisecondsLeft > 0 {
-			r.Header.Add(Header, strconv.FormatInt(millisecondsLeft, 10))
-		}
+	millisecondsLeft := rt.millisecondsLeft(r.Context())
+	if millisecondsLeft > 0 {
+		r.Header.Add(Header, strconv.FormatInt(millisecondsLeft, 10))
 	}
 
 	return rt.next.RoundTrip(r)
 }
 
+func (rt *roundTripper) millisecondsLeft(ctx context.Context) int64 {
+	deadlineMs := int64(0)
+	deadline, ok := ctx.Deadline()
+	if ok {
+		deadlineMs = int64(time.Until(deadline) / time.Millisecond)
+	}
+
+	if rt.maxTimeout > 0 && (!ok || rt.maxTimeout < deadlineMs) {
+		deadlineMs = rt.maxTimeout
+	}
+
+	return deadlineMs
+}
+
 // Client builds a new *http.Client from the given *http.Client, wrapping the
 // given client's Transport using RoundTripper.
-func Client(c *http.Client) *http.Client {
+func Client(c *http.Client, opts ...RoundTripperOpt) *http.Client {
 	transport := c.Transport
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
 
 	return &http.Client{
-		Transport:     RoundTripper(transport),
+		Transport:     RoundTripper(transport, opts...),
 		CheckRedirect: c.CheckRedirect,
 		Jar:           c.Jar,
 		Timeout:       c.Timeout,
 	}
 }
 
+// RoundTripperOpt is a function which can modify the behaviour of the shed
+// client transport middleware.
+type RoundTripperOpt func(*roundTripper)
+
+// WithMaxTimeout will set a default X-Client-Timeout-Ms if it is lower than
+// any context.Context deadline on the request.
+//
+// This is intended to be used in cases where some other timeouts are set on
+// the client, e.g. ResponseHeaderTimeout.
+func WithMaxTimeout(d time.Duration) RoundTripperOpt {
+	return func(rt *roundTripper) {
+		rt.maxTimeout = int64(d / time.Millisecond)
+	}
+}
+
 // RoundTripper builds a new http.RoundTripper which propagates context
 // deadlines over the network via the `X-Client-Timeout-Ms` request header.
-func RoundTripper(n http.RoundTripper) http.RoundTripper {
-	return &roundTripper{next: n}
+func RoundTripper(n http.RoundTripper, opts ...RoundTripperOpt) http.RoundTripper {
+	rt := &roundTripper{next: n}
+
+	for _, opt := range opts {
+		opt(rt)
+	}
+
+	return rt
 }
 
 type propagateMiddleware struct {
