@@ -21,3 +21,17 @@ For `rails` apps making use of `ActiveRecord` to manage database connections,
 `Shed.ensure_time_left!` before making any query to the database. This does
 _not_ currently implement support for propagating `Shed.time_left_ms` to the
 database query itself, yet.
+
+## Installing
+
+```ruby
+# Gemfile
+
+# Fetching the latest release
+source "https://rubygems.pkg.github.com/cga1123" do
+  gem "shed"
+end
+
+# Fetching the latest HEAD
+gem "shed", github: "CGA1123/shed", glob: "ruby/shed.gemspec"
+```
