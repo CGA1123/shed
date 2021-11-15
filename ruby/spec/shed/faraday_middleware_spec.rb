@@ -3,6 +3,8 @@
 require "spec_helper"
 
 RSpec.describe Shed::FaradayMiddleware do
+  after { Shed.clear_timeout }
+
   let(:conn) do
     Faraday.new do |c|
       c.use described_class
@@ -76,5 +78,16 @@ RSpec.describe Shed::FaradayMiddleware do
     it { expect(response.status).to eq(200) }
     it { expect(response.headers.keys).to contain_exactly("User-Agent", "X-Client-Timeout-Ms") }
     it { expect(response.headers["X-Client-Timeout-Ms"]).to eq("5000") }
+  end
+
+  context "with a shed timeout that has expired" do
+    subject(:response) { conn.get("/") }
+
+    before do
+      allow(Process).to receive(:clock_gettime).and_return(1.0, 10.0)
+      Shed.with_timeout(5_000)
+    end
+
+    it { expect { response }.to raise_error(Shed::Timeout) }
   end
 end
