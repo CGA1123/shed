@@ -50,6 +50,9 @@ For example:
 
 require "shed"
 
+# Set a default upper bound deadline of 5_000ms, accounting for queueing.
+use Shed::RackMiddleware::DefaultTimeout, timeout_ms: ->(env) { 5_000 - Shed::HerokuDelta.call(env) }
+
 # Set the deadline based on the propagated request header, if set.
 # Adjust the propagated timeout based on the observed queue time (as the
 # difference between the X-Request-Start header and now, as set by Heroku).
@@ -81,3 +84,10 @@ Shed.register_faraday_middleware!
   conn.adapter Faraday.default_adapter
 end
 ```
+
+This middleware will call `Shed.ensure_time_left!` before checking how long is
+left in the current deadline and setting it as the faraday timeout and
+propagating it via the `X-Client-Timeout-Ms` header.
+
+If the connection already has a timeout set that is _lower_ than the current
+time left in the deadline, it will be used instead.
