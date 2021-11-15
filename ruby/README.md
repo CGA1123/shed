@@ -81,3 +81,10 @@ Shed.register_faraday_middleware!
   conn.adapter Faraday.default_adapter
 end
 ```
+
+This middleware will call `Shed.ensure_time_left!` before checking how long is
+left in the current deadline and setting it as the faraday timeout and
+propagating it via the `X-Client-Timeout-Ms` header.
+
+If the connection already has a timeout set that is _lower_ than the current
+time left in the deadline, it will be used instead.
