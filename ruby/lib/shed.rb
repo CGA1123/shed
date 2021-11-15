@@ -29,6 +29,14 @@ module Shed
   private_constant :KEY
 
   class << self
+    # {register_faraday_middleware!} registers {Shed::FaradayMiddleware} on
+    # `Faraday::Request`, allowing it to be used in faraday connections.
+    def register_faraday_middleware!
+      Faraday::Request.register_middleware(
+        shed: Shed::FaradayMiddleware
+      )
+    end
+
     # {timeout_set?} returns whether there is a timeout set in the current
     # context.
     #

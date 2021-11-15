@@ -73,10 +73,11 @@ In order to propagate your timeout to other HTTP services use the `faraday`
 middleware:
 
 ```ruby
-@connection = Faraday.new(url: "https://example.com") do |conn|
-  conn.request Shed::FaradayMiddleware
+Shed.register_faraday_middleware!
 
-  conn.adapter = Faraday.default_adapter
+@connection = Faraday.new(url: "https://example.com") do |conn|
+  conn.request :shed
+
+  conn.adapter Faraday.default_adapter
 end
 ```
-
