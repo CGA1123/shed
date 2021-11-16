@@ -20,6 +20,7 @@ const (
 type roundTripper struct {
 	next       http.RoundTripper
 	maxTimeout int64
+	until      func(time.Time) time.Duration
 }
 
 // RoundTrip wraps the given round tripper, setting the `X-Client-Timeout-Ms`
@@ -38,7 +39,7 @@ func (rt *roundTripper) millisecondsLeft(ctx context.Context) int64 {
 	deadlineMs := int64(0)
 	deadline, ok := ctx.Deadline()
 	if ok {
-		deadlineMs = int64(time.Until(deadline) / time.Millisecond)
+		deadlineMs = int64(rt.until(deadline) / time.Millisecond)
 	}
 
 	if rt.maxTimeout > 0 && (!ok || rt.maxTimeout < deadlineMs) {
@@ -68,6 +69,14 @@ func Client(c *http.Client, opts ...RoundTripperOpt) *http.Client {
 // client transport middleware.
 type RoundTripperOpt func(*roundTripper)
 
+// WithUntilFunc is a function used to calculate the duration until deadline
+// expiration. The default function is backed by `time.Until`.
+func WithUntilFunc(until func(time.Time) time.Duration) RoundTripperOpt {
+	return func(rt *roundTripper) {
+		rt.until = until
+	}
+}
+
 // WithMaxTimeout will set a default X-Client-Timeout-Ms if it is lower than
 // any context.Context deadline on the request.
 //
@@ -82,7 +91,7 @@ func WithMaxTimeout(d time.Duration) RoundTripperOpt {
 // RoundTripper builds a new http.RoundTripper which propagates context
 // deadlines over the network via the `X-Client-Timeout-Ms` request header.
 func RoundTripper(n http.RoundTripper, opts ...RoundTripperOpt) http.RoundTripper {
-	rt := &roundTripper{next: n}
+	rt := &roundTripper{next: n, until: time.Until}
 
 	for _, opt := range opts {
 		opt(rt)
