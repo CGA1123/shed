@@ -134,6 +134,32 @@ func Test_Client(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, res.Body.Close())
 	})
+
+	t.Run("when setting a custom until function", func(t *testing.T) {
+		t.Parallel()
+
+		alwaysOneSecond := func(time.Time) time.Duration {
+			return time.Second
+		}
+
+		c := shed.RoundTripper(roundTripper(func(r *http.Request) (*http.Response, error) {
+			assert.NotEmpty(t, r.Header.Get(shed.Header))
+			assert.Equal(t, "1000", r.Header.Get(shed.Header))
+
+			return response(r), nil
+		}), shed.WithUntilFunc(alwaysOneSecond))
+
+		// Ignores 15000ms timeout and always returns 1000
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		r, err := http.NewRequestWithContext(ctx, "GET", "/foo", nil)
+		require.NoError(t, err)
+
+		res, err := c.RoundTrip(r)
+		require.NoError(t, err)
+		require.NoError(t, res.Body.Close())
+	})
 }
 
 func Test_PropagateMiddleware(t *testing.T) {
